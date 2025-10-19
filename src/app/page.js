@@ -430,13 +430,13 @@ export default function Home() {
       </header>
 
       {/* Mitglied werden Button - Desktop oben rechts */}
-      <div className="fixed right-6 top-20 z-50 hidden lg:block">
+      <div className="fixed right-3 top-20 z-50 hidden lg:block xl:right-6">
         <a
           href="/documents/mietgliedsvertrag.pdf"
           download
-          className="group flex flex-col items-center gap-2 rounded-xl border-2 border-yellow-400/40 bg-gradient-to-br from-slate-900/90 via-slate-800/95 to-slate-900/90 p-4 shadow-2xl shadow-black/50 backdrop-blur-xl transition-all duration-300 hover:border-yellow-400/70 hover:shadow-yellow-600/30 hover:scale-105"
+          className="group flex flex-col items-center gap-1 rounded-lg border border-yellow-400/40 bg-gradient-to-br from-slate-900/90 via-slate-800/95 to-slate-900/90 p-2 shadow-xl shadow-black/40 backdrop-blur-xl transition-all duration-300 hover:border-yellow-400/70 hover:shadow-yellow-600/30 hover:scale-105 xl:gap-2 xl:rounded-xl xl:border-2 xl:p-4 xl:shadow-2xl"
         >
-          <div className="relative h-16 w-16 rounded-full bg-slate-800/50 p-2 ring-2 ring-yellow-400/30 transition-all duration-300 group-hover:ring-yellow-400/60">
+          <div className="relative h-10 w-10 rounded-full bg-slate-800/50 p-1 ring-1 ring-yellow-400/30 transition-all duration-300 group-hover:ring-yellow-400/60 xl:h-16 xl:w-16 xl:p-2 xl:ring-2">
             <Image
               src="/pictures/sbs-siebenbuergenwappenmitschrift.png"
               alt="Siebenbürger Sachsen Wappen"
@@ -446,11 +446,35 @@ export default function Home() {
             />
           </div>
           <div className="text-center">
-            <p className="text-sm font-bold uppercase tracking-wide text-yellow-200">
-              Mitglied werden
+            <p className="text-[10px] font-bold uppercase leading-tight tracking-wide text-yellow-200 xl:text-sm">
+              Mitglied<br />werden
             </p>
-            <p className="mt-0.5 text-xs text-slate-300">
+            <p className="hidden text-xs text-slate-300 xl:block">
               PDF herunterladen
+            </p>
+          </div>
+        </a>
+      </div>
+
+      {/* Mitglied werden Button - Mobile oben links */}
+      <div className="fixed left-3 top-20 z-50 lg:hidden">
+        <a
+          href="/documents/mietgliedsvertrag.pdf"
+          download
+          className="group flex flex-col items-center gap-1 rounded-lg border border-yellow-400/40 bg-gradient-to-br from-slate-900/90 via-slate-800/95 to-slate-900/90 p-2 shadow-xl shadow-black/40 backdrop-blur-xl transition-all duration-300 active:scale-95"
+        >
+          <div className="relative h-10 w-10 rounded-full bg-slate-800/50 p-1 ring-1 ring-yellow-400/30">
+            <Image
+              src="/pictures/sbs-siebenbuergenwappenmitschrift.png"
+              alt="Siebenbürger Sachsen Wappen"
+              width={64}
+              height={64}
+              className="h-full w-full object-contain"
+            />
+          </div>
+          <div className="text-center">
+            <p className="text-[10px] font-bold uppercase leading-tight tracking-wide text-yellow-200">
+              Mitglied<br />werden
             </p>
           </div>
         </a>
@@ -543,8 +567,8 @@ export default function Home() {
         <div id="ueber-uns" className="py-8 lg:py-12">
           <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
             <div className="relative rounded-xl border-2 border-yellow-500/30 bg-gradient-to-br from-blue-950/80 via-slate-900/85 to-red-950/75 p-8 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-12 lg:p-16">
-              {/* Kleine Wappen oben links und rechts */}
-              <div className="absolute left-6 top-6 h-14 w-14 opacity-20 sm:h-16 sm:w-16">
+              {/* Kleine Wappen oben links und rechts - auf Mobile ausgeblendet */}
+              <div className="absolute left-6 top-6 h-14 w-14 opacity-20 sm:h-16 sm:w-16 hidden sm:block">
                 <Image
                   src="/pictures/verband-wappen-sw.jpg"
                   alt=""
@@ -553,7 +577,7 @@ export default function Home() {
                   className="h-full w-full object-contain grayscale"
                 />
               </div>
-              <div className="absolute right-6 top-6 h-14 w-14 opacity-20 sm:h-16 sm:w-16">
+              <div className="absolute right-6 top-6 h-14 w-14 opacity-20 sm:h-16 sm:w-16 hidden sm:block">
                 <Image
                   src="/pictures/verband-wappen-sw.jpg"
                   alt=""
@@ -563,11 +587,11 @@ export default function Home() {
                 />
               </div>
 
-              {/* Dekorative Ecken - Wappenfarben */}
-              <div className="absolute left-3 top-3 h-10 w-10 border-l-2 border-t-2 border-yellow-400/50"></div>
-              <div className="absolute right-3 top-3 h-10 w-10 border-r-2 border-t-2 border-red-400/45"></div>
-              <div className="absolute bottom-3 left-3 h-10 w-10 border-b-2 border-l-2 border-blue-400/45"></div>
-              <div className="absolute bottom-3 right-3 h-10 w-10 border-b-2 border-r-2 border-yellow-400/50"></div>
+              {/* Dekorative Ecken - Wappenfarben - auf Mobile kleiner */}
+              <div className="absolute left-2 top-2 h-6 w-6 sm:left-3 sm:top-3 sm:h-10 sm:w-10 border-l-2 border-t-2 border-yellow-400/50"></div>
+              <div className="absolute right-2 top-2 h-6 w-6 sm:right-3 sm:top-3 sm:h-10 sm:w-10 border-r-2 border-t-2 border-red-400/45"></div>
+              <div className="absolute bottom-2 left-2 h-6 w-6 sm:bottom-3 sm:left-3 sm:h-10 sm:w-10 border-b-2 border-l-2 border-blue-400/45"></div>
+              <div className="absolute bottom-2 right-2 h-6 w-6 sm:bottom-3 sm:right-3 sm:h-10 sm:w-10 border-b-2 border-r-2 border-yellow-400/50"></div>
 
               <div className="text-center">
                 <div className="inline-block rounded-full border-2 border-yellow-400/40 bg-gradient-to-br from-blue-900/50 to-slate-900/60 px-6 py-2 shadow-lg shadow-blue-900/30 backdrop-blur-sm">
@@ -645,8 +669,8 @@ export default function Home() {
         <div id="termine" className="py-8 lg:py-12">
           <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
             <div className="relative overflow-visible rounded-xl border-2 border-yellow-500/30 bg-gradient-to-br from-red-950/80 via-slate-900/85 to-blue-950/80 p-8 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-12 lg:p-16">
-              {/* Kleine Wappen oben links und rechts */}
-              <div className="absolute left-6 top-6 h-14 w-14 opacity-20 sm:h-16 sm:w-16">
+              {/* Kleine Wappen oben links und rechts - auf Mobile ausgeblendet */}
+              <div className="absolute left-6 top-6 h-14 w-14 opacity-20 sm:h-16 sm:w-16 hidden sm:block">
                 <Image
                   src="/pictures/verband-wappen-sw.jpg"
                   alt=""
@@ -655,7 +679,7 @@ export default function Home() {
                   className="h-full w-full object-contain grayscale"
                 />
               </div>
-              <div className="absolute right-6 top-6 h-14 w-14 opacity-20 sm:h-16 sm:w-16">
+              <div className="absolute right-6 top-6 h-14 w-14 opacity-20 sm:h-16 sm:w-16 hidden sm:block">
                 <Image
                   src="/pictures/verband-wappen-sw.jpg"
                   alt=""
@@ -665,11 +689,11 @@ export default function Home() {
                 />
               </div>
 
-              {/* Dekorative Ecken - Wappenfarben */}
-              <div className="absolute left-3 top-3 h-10 w-10 border-l-2 border-t-2 border-red-400/45"></div>
-              <div className="absolute right-3 top-3 h-10 w-10 border-r-2 border-t-2 border-blue-400/45"></div>
-              <div className="absolute bottom-3 left-3 h-10 w-10 border-b-2 border-l-2 border-yellow-400/50"></div>
-              <div className="absolute bottom-3 right-3 h-10 w-10 border-b-2 border-r-2 border-red-400/45"></div>
+              {/* Dekorative Ecken - Wappenfarben - auf Mobile kleiner */}
+              <div className="absolute left-2 top-2 h-6 w-6 sm:left-3 sm:top-3 sm:h-10 sm:w-10 border-l-2 border-t-2 border-red-400/45"></div>
+              <div className="absolute right-2 top-2 h-6 w-6 sm:right-3 sm:top-3 sm:h-10 sm:w-10 border-r-2 border-t-2 border-blue-400/45"></div>
+              <div className="absolute bottom-2 left-2 h-6 w-6 sm:bottom-3 sm:left-3 sm:h-10 sm:w-10 border-b-2 border-l-2 border-yellow-400/50"></div>
+              <div className="absolute bottom-2 right-2 h-6 w-6 sm:bottom-3 sm:right-3 sm:h-10 sm:w-10 border-b-2 border-r-2 border-red-400/45"></div>
 
               {/* Titel */}
               <div className="mb-12 text-center">
@@ -913,8 +937,8 @@ export default function Home() {
         <div id="galerie" className="py-8 lg:py-12">
           <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
             <div className="relative rounded-xl border-2 border-yellow-500/30 bg-gradient-to-br from-slate-900/85 via-slate-950/90 to-blue-950/80 p-8 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-12 lg:p-16">
-              {/* Kleine Wappen oben links und rechts */}
-              <div className="absolute left-6 top-6 h-14 w-14 opacity-20 sm:h-16 sm:w-16">
+              {/* Kleine Wappen oben links und rechts - auf Mobile ausgeblendet */}
+              <div className="absolute left-6 top-6 h-14 w-14 opacity-20 sm:h-16 sm:w-16 hidden sm:block">
                 <Image
                   src="/pictures/verband-wappen-sw.jpg"
                   alt=""
@@ -923,7 +947,7 @@ export default function Home() {
                   className="h-full w-full object-contain grayscale"
                 />
               </div>
-              <div className="absolute right-6 top-6 h-14 w-14 opacity-20 sm:h-16 sm:w-16">
+              <div className="absolute right-6 top-6 h-14 w-14 opacity-20 sm:h-16 sm:w-16 hidden sm:block">
                 <Image
                   src="/pictures/verband-wappen-sw.jpg"
                   alt=""
@@ -1053,8 +1077,8 @@ export default function Home() {
         <div id="kontakt" className="py-8 lg:py-12">
           <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
             <div className="relative rounded-xl border-2 border-yellow-500/30 bg-gradient-to-br from-blue-950/80 via-slate-900/85 to-red-950/75 p-8 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-12 lg:p-16">
-              {/* Kleine Wappen oben links und rechts */}
-              <div className="absolute left-6 top-6 h-14 w-14 opacity-20 sm:h-16 sm:w-16">
+              {/* Kleine Wappen oben links und rechts - auf Mobile ausgeblendet */}
+              <div className="absolute left-6 top-6 h-14 w-14 opacity-20 sm:h-16 sm:w-16 hidden sm:block">
                 <Image
                   src="/pictures/verband-wappen-sw.jpg"
                   alt=""
@@ -1063,7 +1087,7 @@ export default function Home() {
                   className="h-full w-full object-contain grayscale"
                 />
               </div>
-              <div className="absolute right-6 top-6 h-14 w-14 opacity-20 sm:h-16 sm:w-16">
+              <div className="absolute right-6 top-6 h-14 w-14 opacity-20 sm:h-16 sm:w-16 hidden sm:block">
                 <Image
                   src="/pictures/verband-wappen-sw.jpg"
                   alt=""
@@ -1073,11 +1097,11 @@ export default function Home() {
                 />
               </div>
 
-              {/* Dekorative Ecken - Wappenfarben */}
-              <div className="absolute left-3 top-3 h-10 w-10 border-l-2 border-t-2 border-yellow-400/50"></div>
-              <div className="absolute right-3 top-3 h-10 w-10 border-r-2 border-t-2 border-red-400/45"></div>
-              <div className="absolute bottom-3 left-3 h-10 w-10 border-b-2 border-l-2 border-blue-400/45"></div>
-              <div className="absolute bottom-3 right-3 h-10 w-10 border-b-2 border-r-2 border-yellow-400/50"></div>
+              {/* Dekorative Ecken - Wappenfarben - auf Mobile kleiner */}
+              <div className="absolute left-2 top-2 h-6 w-6 sm:left-3 sm:top-3 sm:h-10 sm:w-10 border-l-2 border-t-2 border-yellow-400/50"></div>
+              <div className="absolute right-2 top-2 h-6 w-6 sm:right-3 sm:top-3 sm:h-10 sm:w-10 border-r-2 border-t-2 border-red-400/45"></div>
+              <div className="absolute bottom-2 left-2 h-6 w-6 sm:bottom-3 sm:left-3 sm:h-10 sm:w-10 border-b-2 border-l-2 border-blue-400/45"></div>
+              <div className="absolute bottom-2 right-2 h-6 w-6 sm:bottom-3 sm:right-3 sm:h-10 sm:w-10 border-b-2 border-r-2 border-yellow-400/50"></div>
 
               <div className="text-center">
                 <div className="inline-block rounded-full border-2 border-yellow-400/40 bg-gradient-to-br from-blue-900/50 to-slate-900/60 px-6 py-2 shadow-lg shadow-blue-900/30 backdrop-blur-sm">
