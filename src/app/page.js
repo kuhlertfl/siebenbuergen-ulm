@@ -1,7 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const UPCOMING_EVENTS = [
   {
@@ -53,17 +55,148 @@ function getWeekday(year, month, day) {
 }
 
 export default function Home() {
-  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [selectedEvent, setSelectedEvent] = useState(UPCOMING_EVENTS[0]);
   const [currentMonth, setCurrentMonth] = useState("OKT"); // Standardmonat
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
 
   const handleEventClick = (event) => {
     setSelectedEvent(event);
     setCurrentMonth(event.month);
   };
 
+  const goToSlide = (index) => {
+    if (index >= 0 && index < UPCOMING_EVENTS.length) {
+      setActiveSlide(index);
+      setSelectedEvent(UPCOMING_EVENTS[index]);
+      setCurrentMonth(UPCOMING_EVENTS[index].month);
+    }
+  };
+
+  const nextSlide = () => {
+    goToSlide(activeSlide + 1);
+  };
+
+  const prevSlide = () => {
+    goToSlide(activeSlide - 1);
+  };
+
+  const handleTouchStart = (e) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe) {
+      nextSlide();
+    }
+    if (isRightSwipe) {
+      prevSlide();
+    }
+
+    setTouchStart(0);
+    setTouchEnd(0);
+  };
+
   const closeMobileMenu = () => {
     setMobileMenuOpen(false);
+  };
+
+  const downloadPDF = () => {
+    const doc = new jsPDF();
+    const monthNames = { OKT: "Oktober", NOV: "November", DEZ: "Dezember" };
+
+    // Header
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("Siebenbürger Sachsen Ulm e.V.", 105, 20, { align: "center" });
+
+    doc.setFontSize(16);
+    doc.text("Jahresttermine 2025", 105, 30, { align: "center" });
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("Kreisgruppe Ulm - Tradition lebt. Gemeinschaft verbindet.", 105, 38, { align: "center" });
+
+    // Linie
+    doc.setLineWidth(0.5);
+    doc.line(20, 42, 190, 42);
+
+    // Termine als Tabelle
+    const tableData = UPCOMING_EVENTS.map((event, index) => {
+      const monthMap = { OKT: 9, NOV: 10, DEZ: 11 };
+      const eventDate = new Date(2025, monthMap[event.month], parseInt(event.date));
+      const weekday = getWeekday(2025, monthMap[event.month], parseInt(event.date));
+
+      return [
+        `${event.date}. ${monthNames[event.month]} 2025`,
+        weekday,
+        event.title,
+        event.time || "-",
+        event.band || "-",
+        `${event.location}\n${event.address}`
+      ];
+    });
+
+    autoTable(doc, {
+      startY: 48,
+      head: [['Datum', 'Wochentag', 'Veranstaltung', 'Uhrzeit', 'Musik', 'Ort']],
+      body: tableData,
+      theme: 'striped',
+      headStyles: {
+        fillColor: [200, 150, 50],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 10
+      },
+      bodyStyles: {
+        fontSize: 9,
+        cellPadding: 3
+      },
+      columnStyles: {
+        0: { cellWidth: 30 },
+        1: { cellWidth: 25 },
+        2: { cellWidth: 40 },
+        3: { cellWidth: 30 },
+        4: { cellWidth: 30 },
+        5: { cellWidth: 'auto' }
+      },
+      margin: { left: 15, right: 15 }
+    });
+
+    // Footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.text(
+        `Siebenbürger Sachsen Ulm e.V. • Bürgerzentrum Wiblingen • info@siebenbuerger-ulm.de`,
+        105,
+        doc.internal.pageSize.height - 10,
+        { align: "center" }
+      );
+      doc.text(
+        `Seite ${i} von ${pageCount}`,
+        105,
+        doc.internal.pageSize.height - 5,
+        { align: "center" }
+      );
+    }
+
+    // PDF speichern
+    doc.save('Siebenbuerger-Sachsen-Ulm-Termine-2025.pdf');
   };
 
   // Funktion zum Rendern des Kalenders basierend auf dem aktuellen Monat
@@ -192,8 +325,13 @@ export default function Home() {
                 </a>
               </li>
               <li>
-                <a href="mailto:info@siebenbuerger-ulm.de" className="rounded-full border border-yellow-400/40 bg-yellow-600/20 px-4 py-2 text-sm font-bold text-yellow-200 transition-all hover:border-yellow-400/60 hover:bg-yellow-600/30">
+                <a href="#kontakt" className="text-sm font-semibold text-slate-200 transition-colors hover:text-yellow-200">
                   Kontakt
+                </a>
+              </li>
+              <li>
+                <a href="mailto:info@siebenbuerger-ulm.de" className="rounded-full border border-yellow-400/40 bg-yellow-600/20 px-4 py-2 text-sm font-bold text-yellow-200 transition-all hover:border-yellow-400/60 hover:bg-yellow-600/30">
+                  E-Mail
                 </a>
               </li>
             </ul>
@@ -269,11 +407,20 @@ export default function Home() {
                 </li>
                 <li>
                   <a
+                    href="#kontakt"
+                    onClick={closeMobileMenu}
+                    className="block rounded-lg px-4 py-3 text-base font-semibold text-slate-200 transition-colors hover:bg-slate-800/50 hover:text-yellow-200"
+                  >
+                    Kontakt
+                  </a>
+                </li>
+                <li>
+                  <a
                     href="mailto:info@siebenbuerger-ulm.de"
                     onClick={closeMobileMenu}
                     className="block rounded-lg border border-yellow-400/40 bg-yellow-600/20 px-4 py-3 text-center text-base font-bold text-yellow-200 transition-all hover:border-yellow-400/60 hover:bg-yellow-600/30"
                   >
-                    Kontakt
+                    E-Mail schreiben
                   </a>
                 </li>
               </ul>
@@ -394,7 +541,7 @@ export default function Home() {
 
         {/* Über uns Sektion */}
         <div id="ueber-uns" className="py-8 lg:py-12">
-          <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
             <div className="relative rounded-xl border-2 border-yellow-500/30 bg-gradient-to-br from-blue-950/80 via-slate-900/85 to-red-950/75 p-8 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-12 lg:p-16">
               {/* Kleine Wappen oben links und rechts */}
               <div className="absolute left-6 top-6 h-14 w-14 opacity-20 sm:h-16 sm:w-16">
@@ -432,6 +579,28 @@ export default function Home() {
                 <h2 className="mt-8 text-3xl font-bold leading-tight text-yellow-100 sm:text-4xl lg:text-5xl">
                   Heimat gestalten in Ulm
                 </h2>
+
+                {/* Homepagebild */}
+                <div className="mx-auto mt-10 max-w-5xl">
+                  <div className="relative overflow-visible rounded-xl border-2 border-yellow-400/40 shadow-2xl shadow-yellow-900/30">
+                    {/* Dekorative Ecken außerhalb des Bildes */}
+                    <div className="absolute -left-3 -top-3 z-10 h-8 w-8 border-l-2 border-t-2 border-yellow-400/70"></div>
+                    <div className="absolute -right-3 -top-3 z-10 h-8 w-8 border-r-2 border-t-2 border-red-400/70"></div>
+                    <div className="absolute -bottom-3 -left-3 z-10 h-8 w-8 border-b-2 border-l-2 border-blue-400/70"></div>
+                    <div className="absolute -bottom-3 -right-3 z-10 h-8 w-8 border-b-2 border-r-2 border-yellow-400/70"></div>
+
+                    <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl">
+                      <Image
+                        src="/pictures/Homepagebild.jpg"
+                        alt="Siebenbürger Sachsen Gemeinschaft in Ulm"
+                        fill
+                        className="object-contain"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent"></div>
+                    </div>
+                  </div>
+                </div>
 
                 <p className="mx-auto mt-8 max-w-3xl text-base leading-relaxed text-slate-50/95 sm:text-lg lg:text-xl">
                   Wir bewahren die Geschichte und das kulturelle Erbe der
@@ -475,7 +644,7 @@ export default function Home() {
         {/* Veranstaltungen und Termine Sektion */}
         <div id="termine" className="py-8 lg:py-12">
           <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
-            <div className="relative rounded-xl border-2 border-yellow-500/30 bg-gradient-to-br from-red-950/80 via-slate-900/85 to-blue-950/80 p-8 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-12 lg:p-16">
+            <div className="relative overflow-visible rounded-xl border-2 border-yellow-500/30 bg-gradient-to-br from-red-950/80 via-slate-900/85 to-blue-950/80 p-8 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-12 lg:p-16">
               {/* Kleine Wappen oben links und rechts */}
               <div className="absolute left-6 top-6 h-14 w-14 opacity-20 sm:h-16 sm:w-16">
                 <Image
@@ -512,122 +681,209 @@ export default function Home() {
                 <h2 className="mt-6 text-3xl font-bold leading-tight text-yellow-100 sm:text-4xl lg:text-5xl">
                   Kommende Veranstaltungen
                 </h2>
+
+                {/* PDF Download Button */}
+                <div className="mt-8">
+                  <button
+                    onClick={downloadPDF}
+                    className="inline-flex items-center justify-center gap-3 rounded-full border-2 border-yellow-400/50 bg-gradient-to-r from-yellow-600/75 to-yellow-500/75 px-6 py-3 text-sm font-bold uppercase tracking-wide text-slate-900 shadow-lg shadow-yellow-900/40 backdrop-blur-sm transition-all duration-300 hover:border-yellow-300/70 hover:from-yellow-500/85 hover:to-yellow-400/85 hover:shadow-xl hover:shadow-yellow-600/50 hover:scale-105 sm:px-8"
+                  >
+                    <span>📅</span>
+                    <span>Alle Termine 2025 als PDF herunterladen</span>
+                  </button>
+                </div>
               </div>
 
-              {/* Kalender und Termine */}
-              <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
-                {/* Kalender Links - Einzelner dynamischer Kalender */}
-                <div className="flex justify-center lg:w-1/3">
-                  <div className="w-full max-w-sm space-y-6">
-                    {/* Hinweis */}
-                    {selectedEvent && (
-                      <div className="rounded-lg border-2 border-yellow-400/50 bg-gradient-to-r from-yellow-900/60 to-amber-900/60 p-4 text-center backdrop-blur-sm shadow-lg">
-                        <p className="text-sm font-semibold text-yellow-50">
-                          📅 {selectedEvent.title}
-                        </p>
-                        <p className="mt-1 text-xs text-yellow-100">
-                          {selectedEvent.date}. {selectedEvent.month === "OKT" ? "Oktober" : selectedEvent.month === "NOV" ? "November" : "Dezember"} 2025
-                        </p>
-                      </div>
-                    )}
+              {/* Hauptveranstaltung - Custom Slider */}
+              <div className="relative">
+                {/* Navigation Buttons - Desktop */}
+                <button
+                  onClick={prevSlide}
+                  disabled={activeSlide === 0}
+                  className="absolute left-0 top-1/2 z-20 hidden -translate-x-full -translate-y-1/2 lg:flex h-12 w-12 items-center justify-center rounded-full border-2 border-yellow-400/40 bg-slate-900/90 text-yellow-400 backdrop-blur-md transition-all hover:border-yellow-400/70 hover:bg-slate-900 hover:scale-110 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  style={{ marginLeft: '-5px' }}
+                >
+                  <span className="text-2xl font-bold">‹</span>
+                </button>
+                <button
+                  onClick={nextSlide}
+                  disabled={activeSlide === UPCOMING_EVENTS.length - 1}
+                  className="absolute right-0 top-1/2 z-20 hidden translate-x-full -translate-y-1/2 lg:flex h-12 w-12 items-center justify-center rounded-full border-2 border-yellow-400/40 bg-slate-900/90 text-yellow-400 backdrop-blur-md transition-all hover:border-yellow-400/70 hover:bg-slate-900 hover:scale-110 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  style={{ marginRight: '-5px' }}
+                >
+                  <span className="text-2xl font-bold">›</span>
+                </button>
 
-                    {/* Dynamischer Kalender */}
-                    {renderCalendar()}
+                {/* Slider Container */}
+                <div
+                  className="relative overflow-hidden"
+                  onTouchStart={handleTouchStart}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
+                >
+                  <div
+                    className="flex transition-transform duration-500 ease-in-out"
+                    style={{ transform: `translateX(-${activeSlide * 100}%)` }}
+                  >
+                    {UPCOMING_EVENTS.map((event, index) => {
+                      const monthMap = { OKT: 9, NOV: 10, DEZ: 11 };
+                      const eventDate = new Date(2025, monthMap[event.month], parseInt(event.date));
+                      const weekday = getWeekday(2025, monthMap[event.month], parseInt(event.date));
+                      const weekNumber = getWeekNumber(eventDate);
+
+                      return (
+                        <div key={index} className="w-full flex-shrink-0">
+                          <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
+                            {/* Veranstaltungs-Details */}
+                            <div className="flex-1">
+                              <div className="group relative overflow-hidden rounded-lg border-2 border-yellow-400/60 bg-gradient-to-br from-yellow-900/55 to-slate-900/80 p-4 shadow-xl shadow-yellow-600/30 backdrop-blur-sm sm:p-6 lg:p-8">
+                                {/* Dekorative Ecken */}
+                                <div className="absolute left-2 top-2 h-4 w-4 border-l-2 border-t-2 border-yellow-400/40"></div>
+                                <div className="absolute right-2 top-2 h-4 w-4 border-r-2 border-t-2 border-red-400/40"></div>
+
+                                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+                                  {/* Datum Box */}
+                                  <div className="flex-shrink-0 self-start">
+                                    <div className="flex h-24 w-24 flex-col items-center justify-center rounded-lg border-2 border-yellow-400/40 bg-gradient-to-br from-red-900/75 to-yellow-900/75 shadow-lg shadow-red-900/30 sm:h-28 sm:w-28">
+                                      <span className="text-xs font-bold uppercase tracking-wider text-yellow-200">
+                                        {event.month}
+                                      </span>
+                                      <span className="mt-1 text-3xl font-bold text-white sm:text-4xl">
+                                        {event.date}
+                                      </span>
+                                      <span className="text-xs text-slate-100">
+                                        {event.year}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {/* Event Details */}
+                                  <div className="flex-1 min-w-0 space-y-3">
+                                    <h3 className="text-xl font-bold text-yellow-50 break-words sm:text-2xl lg:text-3xl">
+                                      {event.title}
+                                    </h3>
+
+                                    {/* Wochentag und Kalenderwoche */}
+                                    <div className="flex flex-wrap items-center gap-2 text-sm">
+                                      <span className="rounded-full border border-yellow-400/30 bg-yellow-900/35 px-3 py-1 font-semibold text-yellow-100 text-xs sm:text-sm">
+                                        {weekday}
+                                      </span>
+                                      <span className="rounded-full border border-blue-400/30 bg-blue-900/35 px-3 py-1 font-semibold text-blue-100 text-xs sm:text-sm">
+                                        KW {weekNumber}
+                                      </span>
+                                    </div>
+
+                                    <div className="space-y-2 text-slate-50">
+                                      {event.time && (
+                                        <p className="flex items-start gap-2 text-sm sm:text-base">
+                                          <span className="text-yellow-300 flex-shrink-0">🕐</span>
+                                          <span className="break-words">{event.time}</span>
+                                        </p>
+                                      )}
+
+                                      {event.band && (
+                                        <p className="flex items-start gap-2 text-sm sm:text-base">
+                                          <span className="text-red-300 flex-shrink-0">🎵</span>
+                                          <span className="break-words">{event.band}</span>
+                                        </p>
+                                      )}
+
+                                      <div className="mt-4 rounded-lg border border-blue-400/25 bg-slate-900/40 p-3">
+                                        <p className="flex items-start gap-2 text-sm font-semibold text-blue-100">
+                                          <span className="flex-shrink-0">📍</span>
+                                          <span className="break-words">{event.location}</span>
+                                        </p>
+                                        <p className="ml-6 mt-1 text-xs sm:text-sm text-slate-200 break-words">
+                                          {event.address}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Kalender Rechts - Nur auf Desktop sichtbar */}
+                            <div className="hidden lg:block lg:w-80 flex-shrink-0">
+                              <div className="space-y-4">
+                                {/* Hinweis */}
+                                <div className="rounded-lg border-2 border-yellow-400/50 bg-gradient-to-r from-yellow-900/60 to-amber-900/60 p-4 text-center backdrop-blur-sm shadow-lg">
+                                  <p className="text-sm font-semibold text-yellow-50">
+                                    📅 {event.title}
+                                  </p>
+                                  <p className="mt-1 text-xs text-yellow-100">
+                                    {event.date}. {event.month === "OKT" ? "Oktober" : event.month === "NOV" ? "November" : "Dezember"} 2025
+                                  </p>
+                                </div>
+
+                                {/* Kalender für diesen Event */}
+                                {index === activeSlide && renderCalendar()}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* Termine Rechts */}
-                <div className="flex-1 space-y-6">
+                {/* Pagination Dots */}
+                <div className="mt-8 flex justify-center gap-2">
+                  {UPCOMING_EVENTS.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => goToSlide(index)}
+                      className={`h-3 w-3 rounded-full transition-all ${
+                        index === activeSlide
+                          ? 'bg-yellow-400 w-8'
+                          : 'bg-yellow-400/30 hover:bg-yellow-400/50'
+                      }`}
+                      aria-label={`Gehe zu Termin ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Kompakte Übersicht aller Termine */}
+              <div className="mt-12">
+                <h3 className="mb-6 text-center text-xl font-bold text-yellow-100">Alle Termine im Überblick</h3>
+                <div className="space-y-3">
                   {UPCOMING_EVENTS.map((event, index) => {
-                    const monthMap = { OKT: 9, NOV: 10, DEZ: 11 };
-                    const eventDate = new Date(2025, monthMap[event.month], parseInt(event.date));
-                    const weekday = getWeekday(2025, monthMap[event.month], parseInt(event.date));
-                    const weekNumber = getWeekNumber(eventDate);
-                    const isSelected = selectedEvent?.date === event.date && selectedEvent?.month === event.month;
+                    const monthNames = { OKT: "Oktober", NOV: "November", DEZ: "Dezember" };
+                    const isActive = index === activeSlide;
 
                     return (
                       <div
                         key={index}
-                        onClick={() => handleEventClick(event)}
-                        className={`group relative overflow-hidden rounded-lg border-2 p-6 shadow-xl backdrop-blur-sm transition-all duration-300 lg:p-8 cursor-pointer ${
-                          isSelected
-                            ? "border-yellow-400/60 bg-gradient-to-br from-yellow-900/55 to-slate-900/80 shadow-yellow-600/30"
-                            : "border-yellow-400/30 bg-gradient-to-br from-blue-900/45 to-slate-900/75 hover:border-yellow-400/50 hover:shadow-yellow-600/20"
+                        className={`flex items-center justify-between rounded-lg border p-3 transition-all cursor-pointer ${
+                          isActive
+                            ? "border-yellow-400/60 bg-yellow-900/30"
+                            : "border-yellow-400/20 bg-slate-900/40 hover:border-yellow-400/40 hover:bg-slate-900/60"
                         }`}
+                        onClick={() => {
+                          goToSlide(index);
+                        }}
                       >
-                      {/* Dekorative Ecken */}
-                      <div className="absolute left-2 top-2 h-4 w-4 border-l-2 border-t-2 border-yellow-400/40"></div>
-                      <div className="absolute right-2 top-2 h-4 w-4 border-r-2 border-t-2 border-red-400/40"></div>
-
-                      <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:gap-8">
-                        {/* Datum Box */}
-                        <div className="flex-shrink-0">
-                          <div className="flex h-24 w-24 flex-col items-center justify-center rounded-lg border-2 border-yellow-400/40 bg-gradient-to-br from-red-900/75 to-yellow-900/75 shadow-lg shadow-red-900/30">
-                            <span className="text-xs font-bold uppercase tracking-wider text-yellow-200">
-                              {event.month}
-                            </span>
-                            <span className="mt-1 text-3xl font-bold text-white">
-                              {event.date}
-                            </span>
-                            <span className="text-xs text-slate-100">
-                              {event.year}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Event Details */}
-                        <div className="flex-1 space-y-3">
-                          <h3 className="text-2xl font-bold text-yellow-50">
-                            {event.title}
-                          </h3>
-
-                          {/* Wochentag und Kalenderwoche */}
-                          <div className="flex flex-wrap items-center gap-3 text-sm">
-                            <span className="rounded-full border border-yellow-400/30 bg-yellow-900/35 px-3 py-1 font-semibold text-yellow-100">
-                              {weekday}
-                            </span>
-                            <span className="rounded-full border border-blue-400/30 bg-blue-900/35 px-3 py-1 font-semibold text-blue-100">
-                              KW {weekNumber}
-                            </span>
-                          </div>
-
-                          <div className="space-y-2 text-slate-50">
-                            {event.time && (
-                              <p className="flex items-center gap-2 text-base">
-                                <span className="text-yellow-300">🕐</span>
-                                <span>{event.time}</span>
-                              </p>
-                            )}
-
-                            {event.band && (
-                              <p className="flex items-center gap-2 text-base">
-                                <span className="text-red-300">🎵</span>
-                                <span>{event.band}</span>
-                              </p>
-                            )}
-
-                            <div className="mt-4 rounded-lg border border-blue-400/25 bg-slate-900/40 p-3">
-                              <p className="flex items-center gap-2 text-sm font-semibold text-blue-100">
-                                <span>📍</span>
-                                <span>{event.location}</span>
-                              </p>
-                              <p className="ml-6 mt-1 text-sm text-slate-200">
-                                {event.address}
-                              </p>
+                        <div className="flex items-center gap-4 flex-1 min-w-0">
+                          <div className="flex-shrink-0 flex items-center justify-center w-14 h-14 rounded-lg border border-yellow-400/30 bg-gradient-to-br from-red-900/50 to-yellow-900/50">
+                            <div className="text-center">
+                              <div className="text-xs font-bold text-yellow-200">{event.date}</div>
+                              <div className="text-xs text-slate-100">{event.month}</div>
                             </div>
                           </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-yellow-50 truncate text-sm sm:text-base">{event.title}</p>
+                            <p className="text-xs text-slate-300 truncate sm:text-sm">{event.date}. {monthNames[event.month]} 2025</p>
+                          </div>
+                        </div>
+                        <div className="flex-shrink-0 ml-2">
+                          <span className={`text-xl transition-transform ${isActive ? "text-yellow-400" : "text-slate-400"}`}>
+                            →
+                          </span>
                         </div>
                       </div>
-                    </div>
-                      );
+                    );
                   })}
-
-                  {/* Weitere Termine Hinweis */}
-                  <div className="rounded-lg border border-yellow-400/25 bg-slate-900/50 p-6 text-center backdrop-blur-sm">
-                    <p className="text-sm text-slate-100">
-                      Weitere Termine werden zeitnah bekannt gegeben
-                    </p>
-                  </div>
                 </div>
               </div>
             </div>
@@ -767,6 +1023,291 @@ export default function Home() {
                   </a>
                   <p className="mt-4 text-sm text-slate-400">
                     Tauchen Sie ein in unsere Bildergalerie
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Dekorativer Trenner */}
+        <div className="flex items-center justify-center py-12 lg:py-16">
+          <div className="flex w-full max-w-3xl items-center gap-4 px-6">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-200/30 to-amber-200/50"></div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-amber-200/30 bg-slate-900/60 backdrop-blur-md">
+              <div className="h-8 w-8 opacity-60">
+                <Image
+                  src="/pictures/sbs-siebenbuergenwappenmitschrift.png"
+                  alt=""
+                  width={32}
+                  height={32}
+                  className="h-full w-full object-contain"
+                />
+              </div>
+            </div>
+            <div className="h-px flex-1 bg-gradient-to-l from-transparent via-amber-200/30 to-amber-200/50"></div>
+          </div>
+        </div>
+
+        {/* Kontakt und Ansprechpartner Sektion */}
+        <div id="kontakt" className="py-8 lg:py-12">
+          <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
+            <div className="relative rounded-xl border-2 border-yellow-500/30 bg-gradient-to-br from-blue-950/80 via-slate-900/85 to-red-950/75 p-8 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-12 lg:p-16">
+              {/* Kleine Wappen oben links und rechts */}
+              <div className="absolute left-6 top-6 h-14 w-14 opacity-20 sm:h-16 sm:w-16">
+                <Image
+                  src="/pictures/verband-wappen-sw.jpg"
+                  alt=""
+                  width={64}
+                  height={64}
+                  className="h-full w-full object-contain grayscale"
+                />
+              </div>
+              <div className="absolute right-6 top-6 h-14 w-14 opacity-20 sm:h-16 sm:w-16">
+                <Image
+                  src="/pictures/verband-wappen-sw.jpg"
+                  alt=""
+                  width={64}
+                  height={64}
+                  className="h-full w-full object-contain grayscale"
+                />
+              </div>
+
+              {/* Dekorative Ecken - Wappenfarben */}
+              <div className="absolute left-3 top-3 h-10 w-10 border-l-2 border-t-2 border-yellow-400/50"></div>
+              <div className="absolute right-3 top-3 h-10 w-10 border-r-2 border-t-2 border-red-400/45"></div>
+              <div className="absolute bottom-3 left-3 h-10 w-10 border-b-2 border-l-2 border-blue-400/45"></div>
+              <div className="absolute bottom-3 right-3 h-10 w-10 border-b-2 border-r-2 border-yellow-400/50"></div>
+
+              <div className="text-center">
+                <div className="inline-block rounded-full border-2 border-yellow-400/40 bg-gradient-to-br from-blue-900/50 to-slate-900/60 px-6 py-2 shadow-lg shadow-blue-900/30 backdrop-blur-sm">
+                  <p className="text-xs font-bold uppercase tracking-[0.3em] text-yellow-200/95 sm:text-sm">
+                    Kontakt & Ansprechpartner
+                  </p>
+                </div>
+
+                <h2 className="mt-8 text-3xl font-bold leading-tight text-yellow-100 sm:text-4xl lg:text-5xl">
+                  Unser Vorstand
+                </h2>
+
+                <p className="mx-auto mt-8 max-w-3xl text-base leading-relaxed text-slate-50/95 sm:text-lg lg:text-xl">
+                  Mit Herz und Engagement gestalten wir gemeinsam die Zukunft unserer
+                  Kreisgruppe. Lernen Sie die Menschen kennen, die unsere Gemeinschaft
+                  leiten und für unsere Traditionen einstehen.
+                </p>
+
+                {/* Vorstandsmitglieder */}
+                <div className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                  {/* Vorstandsmitglied 1 */}
+                  <div className="group relative overflow-hidden rounded-xl border-2 border-yellow-400/30 bg-gradient-to-br from-slate-800/70 to-slate-900/85 shadow-xl backdrop-blur-sm transition-all duration-300 hover:border-yellow-400/60 hover:shadow-2xl hover:shadow-yellow-600/30 hover:scale-105">
+                    {/* Dekorative Ecken */}
+                    <div className="absolute left-2 top-2 h-4 w-4 border-l-2 border-t-2 border-yellow-400/40"></div>
+                    <div className="absolute right-2 top-2 h-4 w-4 border-r-2 border-t-2 border-red-400/40"></div>
+                    <div className="absolute bottom-2 left-2 h-4 w-4 border-b-2 border-l-2 border-blue-400/40"></div>
+                    <div className="absolute bottom-2 right-2 h-4 w-4 border-b-2 border-r-2 border-yellow-400/40"></div>
+
+                    {/* Bild Platzhalter */}
+                    <div className="aspect-[3/4] relative overflow-hidden bg-gradient-to-br from-slate-700/60 to-slate-800/70">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="h-24 w-24 rounded-full bg-slate-600/50 p-4 ring-2 ring-yellow-400/30">
+                          <Image
+                            src="/pictures/sbs-siebenbuergenwappenmitschrift.png"
+                            alt="Vorstandsmitglied"
+                            width={96}
+                            height={96}
+                            className="h-full w-full object-contain opacity-40"
+                          />
+                        </div>
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent"></div>
+                    </div>
+
+                    <div className="p-5">
+                      <h3 className="text-lg font-bold text-yellow-100">Vorsitzender</h3>
+                      <p className="mt-1 text-base font-semibold text-slate-200">Name folgt</p>
+                      <p className="mt-3 text-sm text-slate-300">
+                        Verantwortlich für die Leitung und strategische Ausrichtung der Kreisgruppe.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Vorstandsmitglied 2 */}
+                  <div className="group relative overflow-hidden rounded-xl border-2 border-yellow-400/30 bg-gradient-to-br from-slate-800/70 to-slate-900/85 shadow-xl backdrop-blur-sm transition-all duration-300 hover:border-yellow-400/60 hover:shadow-2xl hover:shadow-yellow-600/30 hover:scale-105">
+                    {/* Dekorative Ecken */}
+                    <div className="absolute left-2 top-2 h-4 w-4 border-l-2 border-t-2 border-yellow-400/40"></div>
+                    <div className="absolute right-2 top-2 h-4 w-4 border-r-2 border-t-2 border-red-400/40"></div>
+                    <div className="absolute bottom-2 left-2 h-4 w-4 border-b-2 border-l-2 border-blue-400/40"></div>
+                    <div className="absolute bottom-2 right-2 h-4 w-4 border-b-2 border-r-2 border-yellow-400/40"></div>
+
+                    {/* Bild Platzhalter */}
+                    <div className="aspect-[3/4] relative overflow-hidden bg-gradient-to-br from-slate-700/60 to-slate-800/70">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="h-24 w-24 rounded-full bg-slate-600/50 p-4 ring-2 ring-yellow-400/30">
+                          <Image
+                            src="/pictures/sbs-siebenbuergenwappenmitschrift.png"
+                            alt="Vorstandsmitglied"
+                            width={96}
+                            height={96}
+                            className="h-full w-full object-contain opacity-40"
+                          />
+                        </div>
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent"></div>
+                    </div>
+
+                    <div className="p-5">
+                      <h3 className="text-lg font-bold text-yellow-100">Stellvertretender Vorsitzender</h3>
+                      <p className="mt-1 text-base font-semibold text-slate-200">Name folgt</p>
+                      <p className="mt-3 text-sm text-slate-300">
+                        Unterstützt den Vorsitzenden und koordiniert wichtige Projekte.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Vorstandsmitglied 3 */}
+                  <div className="group relative overflow-hidden rounded-xl border-2 border-yellow-400/30 bg-gradient-to-br from-slate-800/70 to-slate-900/85 shadow-xl backdrop-blur-sm transition-all duration-300 hover:border-yellow-400/60 hover:shadow-2xl hover:shadow-yellow-600/30 hover:scale-105">
+                    {/* Dekorative Ecken */}
+                    <div className="absolute left-2 top-2 h-4 w-4 border-l-2 border-t-2 border-yellow-400/40"></div>
+                    <div className="absolute right-2 top-2 h-4 w-4 border-r-2 border-t-2 border-red-400/40"></div>
+                    <div className="absolute bottom-2 left-2 h-4 w-4 border-b-2 border-l-2 border-blue-400/40"></div>
+                    <div className="absolute bottom-2 right-2 h-4 w-4 border-b-2 border-r-2 border-yellow-400/40"></div>
+
+                    {/* Bild Platzhalter */}
+                    <div className="aspect-[3/4] relative overflow-hidden bg-gradient-to-br from-slate-700/60 to-slate-800/70">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="h-24 w-24 rounded-full bg-slate-600/50 p-4 ring-2 ring-yellow-400/30">
+                          <Image
+                            src="/pictures/sbs-siebenbuergenwappenmitschrift.png"
+                            alt="Vorstandsmitglied"
+                            width={96}
+                            height={96}
+                            className="h-full w-full object-contain opacity-40"
+                          />
+                        </div>
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent"></div>
+                    </div>
+
+                    <div className="p-5">
+                      <h3 className="text-lg font-bold text-yellow-100">Kassenwart</h3>
+                      <p className="mt-1 text-base font-semibold text-slate-200">Name folgt</p>
+                      <p className="mt-3 text-sm text-slate-300">
+                        Verwaltet die Finanzen und sorgt für Transparenz in der Kasse.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Vorstandsmitglied 4 */}
+                  <div className="group relative overflow-hidden rounded-xl border-2 border-yellow-400/30 bg-gradient-to-br from-slate-800/70 to-slate-900/85 shadow-xl backdrop-blur-sm transition-all duration-300 hover:border-yellow-400/60 hover:shadow-2xl hover:shadow-yellow-600/30 hover:scale-105">
+                    {/* Dekorative Ecken */}
+                    <div className="absolute left-2 top-2 h-4 w-4 border-l-2 border-t-2 border-yellow-400/40"></div>
+                    <div className="absolute right-2 top-2 h-4 w-4 border-r-2 border-t-2 border-red-400/40"></div>
+                    <div className="absolute bottom-2 left-2 h-4 w-4 border-b-2 border-l-2 border-blue-400/40"></div>
+                    <div className="absolute bottom-2 right-2 h-4 w-4 border-b-2 border-r-2 border-yellow-400/40"></div>
+
+                    {/* Bild Platzhalter */}
+                    <div className="aspect-[3/4] relative overflow-hidden bg-gradient-to-br from-slate-700/60 to-slate-800/70">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="h-24 w-24 rounded-full bg-slate-600/50 p-4 ring-2 ring-yellow-400/30">
+                          <Image
+                            src="/pictures/sbs-siebenbuergenwappenmitschrift.png"
+                            alt="Vorstandsmitglied"
+                            width={96}
+                            height={96}
+                            className="h-full w-full object-contain opacity-40"
+                          />
+                        </div>
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent"></div>
+                    </div>
+
+                    <div className="p-5">
+                      <h3 className="text-lg font-bold text-yellow-100">Schriftführer</h3>
+                      <p className="mt-1 text-base font-semibold text-slate-200">Name folgt</p>
+                      <p className="mt-3 text-sm text-slate-300">
+                        Dokumentiert Sitzungen und kümmert sich um die Korrespondenz.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Vorstandsmitglied 5 */}
+                  <div className="group relative overflow-hidden rounded-xl border-2 border-yellow-400/30 bg-gradient-to-br from-slate-800/70 to-slate-900/85 shadow-xl backdrop-blur-sm transition-all duration-300 hover:border-yellow-400/60 hover:shadow-2xl hover:shadow-yellow-600/30 hover:scale-105">
+                    {/* Dekorative Ecken */}
+                    <div className="absolute left-2 top-2 h-4 w-4 border-l-2 border-t-2 border-yellow-400/40"></div>
+                    <div className="absolute right-2 top-2 h-4 w-4 border-r-2 border-t-2 border-red-400/40"></div>
+                    <div className="absolute bottom-2 left-2 h-4 w-4 border-b-2 border-l-2 border-blue-400/40"></div>
+                    <div className="absolute bottom-2 right-2 h-4 w-4 border-b-2 border-r-2 border-yellow-400/40"></div>
+
+                    {/* Bild Platzhalter */}
+                    <div className="aspect-[3/4] relative overflow-hidden bg-gradient-to-br from-slate-700/60 to-slate-800/70">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="h-24 w-24 rounded-full bg-slate-600/50 p-4 ring-2 ring-yellow-400/30">
+                          <Image
+                            src="/pictures/sbs-siebenbuergenwappenmitschrift.png"
+                            alt="Vorstandsmitglied"
+                            width={96}
+                            height={96}
+                            className="h-full w-full object-contain opacity-40"
+                          />
+                        </div>
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent"></div>
+                    </div>
+
+                    <div className="p-5">
+                      <h3 className="text-lg font-bold text-yellow-100">Kulturbeauftragte</h3>
+                      <p className="mt-1 text-base font-semibold text-slate-200">Name folgt</p>
+                      <p className="mt-3 text-sm text-slate-300">
+                        Organisiert Veranstaltungen und pflegt unser kulturelles Erbe.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Vorstandsmitglied 6 */}
+                  <div className="group relative overflow-hidden rounded-xl border-2 border-yellow-400/30 bg-gradient-to-br from-slate-800/70 to-slate-900/85 shadow-xl backdrop-blur-sm transition-all duration-300 hover:border-yellow-400/60 hover:shadow-2xl hover:shadow-yellow-600/30 hover:scale-105">
+                    {/* Dekorative Ecken */}
+                    <div className="absolute left-2 top-2 h-4 w-4 border-l-2 border-t-2 border-yellow-400/40"></div>
+                    <div className="absolute right-2 top-2 h-4 w-4 border-r-2 border-t-2 border-red-400/40"></div>
+                    <div className="absolute bottom-2 left-2 h-4 w-4 border-b-2 border-l-2 border-blue-400/40"></div>
+                    <div className="absolute bottom-2 right-2 h-4 w-4 border-b-2 border-r-2 border-yellow-400/40"></div>
+
+                    {/* Bild Platzhalter */}
+                    <div className="aspect-[3/4] relative overflow-hidden bg-gradient-to-br from-slate-700/60 to-slate-800/70">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="h-24 w-24 rounded-full bg-slate-600/50 p-4 ring-2 ring-yellow-400/30">
+                          <Image
+                            src="/pictures/sbs-siebenbuergenwappenmitschrift.png"
+                            alt="Vorstandsmitglied"
+                            width={96}
+                            height={96}
+                            className="h-full w-full object-contain opacity-40"
+                          />
+                        </div>
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent"></div>
+                    </div>
+
+                    <div className="p-5">
+                      <h3 className="text-lg font-bold text-yellow-100">Beisitzer</h3>
+                      <p className="mt-1 text-base font-semibold text-slate-200">Name folgt</p>
+                      <p className="mt-3 text-sm text-slate-300">
+                        Berät den Vorstand und bringt wichtige Perspektiven ein.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Kontakt Button */}
+                <div className="mt-12 lg:mt-16">
+                  <a
+                    className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-yellow-400/50 bg-gradient-to-r from-yellow-600/75 to-yellow-500/75 px-8 py-3 text-sm font-bold uppercase tracking-wide text-slate-900 shadow-lg shadow-yellow-900/40 backdrop-blur-sm transition-all duration-300 hover:border-yellow-300/70 hover:from-yellow-500/85 hover:to-yellow-400/85 hover:shadow-xl hover:shadow-yellow-600/50 hover:scale-105 lg:px-10 lg:py-4"
+                    href="mailto:info@siebenbuerger-ulm.de"
+                  >
+                    <span>Kontakt aufnehmen</span>
+                    <span className="text-lg">✉</span>
+                  </a>
+                  <p className="mt-4 text-sm text-slate-300">
+                    info@siebenbuerger-ulm.de
                   </p>
                 </div>
               </div>

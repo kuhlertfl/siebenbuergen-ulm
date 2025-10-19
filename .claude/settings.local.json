@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run build)"
+      "Bash(npm run build)",
+      "Bash(npm install swiper)",
+      "Bash(npm install jspdf jspdf-autotable)",
+      "Bash(npm uninstall swiper)"
     ],
     "deny": [],
     "ask": []
